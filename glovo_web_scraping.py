@@ -1,10 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
 from colorama import Fore
+import re
 
 kaufland_url = "https://glovoapp.com/bg/bg/sofiya/kaufland-sof/"
 fantastiko_url = "https://glovoapp.com/bg/bg/sofiya/fantastiko-sof/"
-# Getting the Html for both supermarkets
+# Getting the Html
 kaufland_result = requests.get(kaufland_url)
 kaufland_result_after_request = BeautifulSoup(kaufland_result.text, "html.parser")
 
@@ -12,17 +13,14 @@ fantastiko_result = requests.get(fantastiko_url)
 fantastiko_result_after_request = BeautifulSoup(fantastiko_result.text, "html.parser")
 
 # Getting the store ratings
-# The HTML is surrounded by blank spaces, so I use strip to remove them. You can also use comprehension
 kaufland_rating = kaufland_result_after_request.find('span', "store-rating__label")
 kaufland_rating_processed = "".join([x.strip() for x in kaufland_rating.string])
-# kaufland_rating_processed = "".join([x for x in kaufland_rating.string if x != " " and x != "\n"])
 
 fantastiko_rating = fantastiko_result_after_request.find('span', "store-rating__label")
 fantastiko_rating_processed = "".join([x.strip() for x in fantastiko_rating.string])
-# fantastiko_rating_processed = "".join([x for x in fantastiko_rating.string if x != " " and x != "\n"])
 
 print(
-    f"Welcome to Glovo!!!\nKaufland's current rating is {kaufland_rating_processed}\nFantastiko's current rating is {fantastiko_rating_processed}\nInput {Fore.BLUE}1{Fore.RESET} for Kaufland or {Fore.BLUE}2 {Fore.RESET}for Fantastiko.")
+    f"Welcome to Glovo!!!\nKaufland's current rating is {kaufland_rating_processed}\nFantastiko's current rating is {fantastiko_rating_processed}\nEnter {Fore.BLUE}1{Fore.RESET} for Kaufland or {Fore.BLUE}2 {Fore.RESET}for Fantastiko.")
 
 number = input("Type Here: ")
 while True:
@@ -45,23 +43,6 @@ class GettingInformation:
         self.result = BeautifulSoup(self.request.text, "html.parser")
 
     def get_prices(self):
-        # Another idea working for prices less than 10 leva
-        # for price in prices:
-        #     all_prices.append(price.string)
-        # for price in prices:
-        #     price_as_string = price.string
-        #     filtered_word = ""
-        #     flag = False
-        #     for letter in price_as_string:
-        #         if letter.isdigit() or letter == ",":
-        #             if len(filtered_word) == 4:
-        #                 flag = True
-        #                 break
-        #             filtered_word += letter
-        #     if flag:
-        #         break
-        #     filtered_word += " лв"
-        #     all_prices.append(filtered_word)
         prices = self.result.find_all('span', "product-price__effective product-price__effective--new-card")
         all_prices = []
         for price in prices:
@@ -74,9 +55,14 @@ class GettingInformation:
     def get_names(self):
         names = self.result.find_all('span', weight="book")
         all_names = []
+        pattern = r"\b(.+)\s\\\s\d+\b"
         for name in names:
             name_as_string = name.string
-            filtered_word = name_as_string[7:-16]
+            result = re.findall(pattern, name_as_string)
+            if result:
+                filtered_word = result[0]
+            else:
+                continue
             all_names.append(filtered_word)
         return all_names
 
